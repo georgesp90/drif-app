@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { StyleSheet, FlatList, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { useRouter } from 'expo-router';
 
 import { Text, View } from '@/components/Themed';
 import { db } from '@/firebaseConfig';
@@ -11,36 +12,43 @@ export default function MyDrifsScreen() {
   const [drifs, setDrifs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const router = useRouter();
 
-  const fetchDrifs = async () => {
+  const fetchDrifsWithReplyCount = useCallback(async () => {
+    if (!deviceId) return;
+
     try {
-      const q = query(
-        collection(db, 'drifs'),
-        orderBy('sentAt', 'desc')
-      );
+      const q = query(collection(db, 'drifs'), orderBy('sentAt', 'desc'));
       const querySnapshot = await getDocs(q);
-      const allDrifs = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      const myDrifs = allDrifs.filter(d => d.deviceId === deviceId);
+
+      const myDrifs = await Promise.all(
+        querySnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(d => d.deviceId === deviceId)
+          .map(async drif => {
+            const repliesRef = collection(db, 'drifs', drif.id, 'replies');
+            const replySnap = await getDocs(repliesRef);
+            return { ...drif, replyCount: replySnap.size };
+          })
+      );
+
       setDrifs(myDrifs);
     } catch (err) {
       console.error('❌ Failed to load Drifs:', err);
     }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchDrifs();
-    setRefreshing(false);
-  };
+  }, [deviceId]);
 
   useEffect(() => {
     if (!deviceLoading && deviceId) {
-      fetchDrifs().finally(() => setLoading(false));
+      fetchDrifsWithReplyCount().finally(() => setLoading(false));
     }
-  }, [deviceId, deviceLoading]);
+  }, [deviceId, deviceLoading, fetchDrifsWithReplyCount]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchDrifsWithReplyCount();
+    setRefreshing(false);
+  };
 
   if (deviceLoading || loading) {
     return (
@@ -64,15 +72,27 @@ export default function MyDrifsScreen() {
       <FlatList
         data={drifs}
         keyExtractor={(item) => item.id}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         renderItem={({ item }) => (
-          <View style={styles.drifItem}>
-            <Text>{item.message}</Text>
-            <Text style={styles.date}>
-              {item.sentAt?.toDate?.().toLocaleString?.() ?? 'unknown'}
+          <Pressable
+            onPress={() => router.push({
+              pathname: '/drif-detail',
+              params: { drifId: item.id, message: item.message }
+            })}
+            style={styles.drifItem}
+          >
+            <Text style={styles.message}>
+              {item.message.length > 100 ? `${item.message.slice(0, 100)}…` : item.message}
             </Text>
-          </View>
+            <Text style={styles.date}>
+              Sent at: {item.sentAt?.toDate?.().toLocaleString?.() ?? 'unknown'}
+            </Text>
+            {item.replyCount > 0 && (
+              <Text style={styles.replyCount}>💬 {item.replyCount} repl{item.replyCount === 1 ? 'y' : 'ies'}</Text>
+            )}
+          </Pressable>
         )}
       />
     </View>
@@ -91,14 +111,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   drifItem: {
-    marginBottom: 20,
-    padding: 12,
+    marginBottom: 24,
+    padding: 14,
     backgroundColor: '#f0f0f0',
     borderRadius: 10,
   },
+  message: {
+    fontSize: 16,
+    marginBottom: 6,
+  },
   date: {
-    marginTop: 6,
     fontSize: 12,
     color: '#888',
+    marginBottom: 4,
+  },
+  replyCount: {
+    fontSize: 13,
+    color: '#444',
+    marginTop: 2,
   },
 });
