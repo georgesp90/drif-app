@@ -6,9 +6,14 @@ import { sendDrif } from '@/utils/sendDrif';
 
 import { Text, View } from '@/components/Themed';
 
+import { useLocation } from '@/context/LocationContext';
+
+
 export default function TabOneScreen() {
   const { deviceId, loading } = useDeviceId();
   const [message, setMessage] = useState('');
+  
+  const { locationName, loading: locationLoading } = useLocation();
 
   const handleSend = async () => {
     if (!deviceId || !message.trim()) return;
@@ -36,6 +41,10 @@ export default function TabOneScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Send a Drif 🌊</Text>
       <Text>Your device ID: {deviceId?.slice(0, 8)}</Text>
+      <Text>
+  📍 {locationLoading ? 'Locating...' : [locationName?.city,locationName?.region].filter(Boolean).join(', ') || 'Unknown'}
+</Text>
+
 
       <TextInput
         style={styles.input}
@@ -75,4 +84,14 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
+  locationContainer: {
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  locationText: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  
 });

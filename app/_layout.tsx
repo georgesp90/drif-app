@@ -8,6 +8,8 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { DeviceIdProvider } from '../context/DeviceIdContext'; // ✅ NEW: import context provider
+import { LocationProvider } from '@/context/LocationContext';
+
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -51,13 +53,16 @@ function RootLayoutNav() {
   console.log("✅ RootLayoutNav mounted");
 
   return (
-    <DeviceIdProvider> {/* ✅ Wrap the entire app in your provider */}
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        </Stack>
-      </ThemeProvider>
-    </DeviceIdProvider>
+    <LocationProvider>
+      <DeviceIdProvider> {/* ✅ Wrap the entire app in your provider */}
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          </Stack>
+        </ThemeProvider>
+      </DeviceIdProvider>
+    </LocationProvider>
+
   );
 }

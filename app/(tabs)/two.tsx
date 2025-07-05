@@ -6,6 +6,9 @@ import { useRouter } from 'expo-router';
 import { Text, View } from '@/components/Themed';
 import { db } from '@/firebaseConfig';
 import { useDeviceId } from '@/context/DeviceIdContext';
+import { useLocation } from '@/context/LocationContext';
+import { router } from 'expo-router';
+
 
 export default function MyDrifsScreen() {
   const { deviceId, loading: deviceLoading } = useDeviceId();
@@ -13,6 +16,7 @@ export default function MyDrifsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+  const { locationName, loading: locationLoading } = useLocation();
 
   const fetchDrifsWithReplyCount = useCallback(async () => {
     if (!deviceId) return;
@@ -76,18 +80,35 @@ export default function MyDrifsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         renderItem={({ item }) => (
-          <Pressable
-            onPress={() => router.push({
+        <Pressable
+          onPress={() =>
+            router.push({
               pathname: '/drif-detail',
-              params: { drifId: item.id, message: item.message }
-            })}
-            style={styles.drifItem}
-          >
+              params: {
+                drifId: item.id,
+                message: item.message ?? item.text,
+                timestamp:
+                  item.sentAt?.toDate?.().toISOString?.() ??
+                  item.timestamp?.toDate?.().toISOString?.() ??
+                  item.repliedAt?.toDate?.().toISOString?.() ??
+                  '',
+              },
+            })
+          }
+          style={styles.drifItem}
+        >
+
             <Text style={styles.message}>
               {item.message.length > 100 ? `${item.message.slice(0, 100)}…` : item.message}
             </Text>
+
             <Text style={styles.date}>
               Sent at: {item.sentAt?.toDate?.().toLocaleString?.() ?? 'unknown'}
+            </Text>
+            <Text>
+              {locationLoading
+                ? 'Locating...'
+                : [locationName?.city, locationName?.region].filter(Boolean).join(', ') || 'Unknown'}
             </Text>
             {item.replyCount > 0 && (
               <Text style={styles.replyCount}>💬 {item.replyCount} repl{item.replyCount === 1 ? 'y' : 'ies'}</Text>

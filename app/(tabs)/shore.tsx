@@ -7,20 +7,22 @@ import {
   TextInput,
   Button,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import {
   collection,
   getDocs,
   query,
   where,
-  orderBy,
 } from 'firebase/firestore';
-import { useNavigation } from 'expo-router';
+import { router } from 'expo-router';
 
 import { Text, View } from '@/components/Themed';
 import { db } from '@/firebaseConfig';
 import { useDeviceId } from '@/context/DeviceIdContext';
 import { sendReply } from '@/utils/sendReply';
+import { useLocation } from '@/context/LocationContext';
+
 
 export default function ShoreScreen() {
   const { deviceId, loading: deviceLoading } = useDeviceId();
@@ -29,7 +31,10 @@ export default function ShoreScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
-  const navigation = useNavigation();
+  const [expandedMap, setExpandedMap] = useState<{ [key: string]: boolean }>({});
+  const [showSeeMoreMap, setShowSeeMoreMap] = useState<{ [key: string]: boolean }>({});
+  const { locationName, loading: locationLoading } = useLocation();
+
 
   const fetchDrifs = async () => {
     if (!deviceId) return;
@@ -97,46 +102,86 @@ export default function ShoreScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-        renderItem={({ item }) => (
-          <View style={styles.drifItem}>
-            <Text>  
-                {item.message.length > 100 ? `${item.message.slice(0, 100)}…` : item.message}
-            </Text>
-            <Text style={styles.date}>
-              {item.sentAt?.toDate?.().toLocaleString?.() ?? 'unknown'}
-            </Text>
+        renderItem={({ item }) => {
+          const isExpanded = expandedMap[item.id] || false;
+          const showSeeMore = showSeeMoreMap[item.id] || false;
 
-            <Button
-              title="View + Reply"
-              onPress={() =>
-                navigation.navigate('drif-detail', {
-                  drifId: item.id,
-                  message: item.message,
-                })
-              }
-            />
+          return (
+            <View style={styles.drifItem}>
+              <TouchableOpacity
+                onPress={() =>
+                  router.push({
+                    pathname: '/drif-detail',
+                    params: {
+                      drifId: item.id,
+                      message: item.message ?? item.text,
+                      timestamp:
+                        item.sentAt?.toDate?.().toISOString?.() ??
+                        item.timestamp?.toDate?.().toISOString?.() ??
+                        item.repliedAt?.toDate?.().toISOString?.() ??
+                        '',
+                    },
+                  })
+                }
+              >
+                <Text
+                  numberOfLines={isExpanded ? undefined : 3}
+                  ellipsizeMode="tail"
+                  onTextLayout={(e) => {
+                    if (e.nativeEvent.lines.length > 3 && !showSeeMoreMap[item.id]) {
+                      setShowSeeMoreMap((prev) => ({ ...prev, [item.id]: true }));
+                    }
+                  }}
+                >
+                  {item.message}
+                </Text>
+              </TouchableOpacity>
 
-            {replyingTo === item.id ? (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Type your reply..."
-                  value={replyText}
-                  onChangeText={setReplyText}
-                />
+              {showSeeMore && (
+                <Text
+                  style={styles.seeMore}
+                  onPress={() =>
+                    setExpandedMap((prev) => ({
+                      ...prev,
+                      [item.id]: !prev[item.id],
+                    }))
+                  }
+                >
+                  {isExpanded ? 'See Less' : 'See More'}
+                </Text>
+              )}
+              <Text style={styles.date}>
+                {item.sentAt?.toDate?.().toLocaleString?.() ?? 'unknown'}
+              </Text>
+              <Text style={styles.meta}>
+                {locationLoading
+                ? 'Locating...'
+                : [locationName?.city, locationName?.region].filter(Boolean).join(', ') || 'Unknown'}
+              </Text>
+
+
+              {replyingTo === item.id ? (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Type your reply..."
+                    value={replyText}
+                    onChangeText={setReplyText}
+                  />
+                  <Button
+                    title="Send Reply"
+                    onPress={() => handleReply(item.id)}
+                  />
+                </>
+              ) : (
                 <Button
-                  title="Send Reply"
-                  onPress={() => handleReply(item.id)}
+                  title="Quick Reply"
+                  onPress={() => setReplyingTo(item.id)}
                 />
-              </>
-            ) : (
-              <Button
-                title="Quick Reply"
-                onPress={() => setReplyingTo(item.id)}
-              />
-            )}
-          </View>
-        )}
+              )}
+            </View>
+          );
+        }}
       />
     </View>
   );
@@ -156,7 +201,7 @@ const styles = StyleSheet.create({
   drifItem: {
     marginBottom: 20,
     padding: 12,
-    backgroundColor: '#e0f7fa',
+    backgroundColor: '#f0f0f0',
     borderRadius: 10,
   },
   date: {
@@ -171,5 +216,10 @@ const styles = StyleSheet.create({
     padding: 8,
     marginTop: 8,
     marginBottom: 4,
+  },
+  seeMore: {
+    color: '#007AFF',
+    marginTop: 4,
+    fontSize: 13,
   },
 });
