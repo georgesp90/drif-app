@@ -1,6 +1,6 @@
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { db } from "../firebaseConfig";
-import { getCurrentLocation } from './location'; // or wherever you place it
+import { getCurrentLocation } from './location'; 
 
 export const sendDrif = async (deviceId: string, message: string) => {
   const location = await getCurrentLocation();
@@ -9,7 +9,7 @@ export const sendDrif = async (deviceId: string, message: string) => {
       deviceId,
       message,
       sentAt: Timestamp.now(),
-      location,
+      location: location || null, // allow it to be null
     });
     console.log("✅ Drif sent!");
   } catch (error) {

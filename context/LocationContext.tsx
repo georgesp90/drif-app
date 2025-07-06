@@ -27,23 +27,26 @@ export const LocationProvider = ({ children }: { children: React.ReactNode }) =>
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          setLocationName('Permission denied');
+          console.warn('📍 Location permission denied');
+          setLocationName({ city: 'Permission Denied' });
           return;
         }
-
+  
         const loc = await Location.getCurrentPositionAsync({});
+        console.log('📍 Coords:', loc.coords);
         const humanReadable = await getHumanReadableLocation(loc.coords);
         setLocationName(humanReadable);
       } catch (error) {
         console.error('❌ Failed to fetch location:', error);
-        setLocationName('Unknown location');
+        setLocationName({ city: 'Unknown' });
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchLocation();
   }, []);
+  
 
   return (
     <LocationContext.Provider value={{ locationName, loading }}>

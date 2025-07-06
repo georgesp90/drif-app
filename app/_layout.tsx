@@ -9,6 +9,8 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { DeviceIdProvider } from '../context/DeviceIdContext'; // ✅ NEW: import context provider
 import { LocationProvider } from '@/context/LocationContext';
+import AnimatedBackgroundWrapper from '@/components/AnimatedBackgroundWrapper'
+
 
 
 export {
@@ -53,16 +55,27 @@ function RootLayoutNav() {
   console.log("✅ RootLayoutNav mounted");
 
   return (
-    <LocationProvider>
-      <DeviceIdProvider> {/* ✅ Wrap the entire app in your provider */}
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          </Stack>
-        </ThemeProvider>
-      </DeviceIdProvider>
-    </LocationProvider>
-
+      <LocationProvider>
+        <DeviceIdProvider> {/* ✅ Wrap the entire app in your provider */}
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="drif-detail"
+                options={{
+                  title: 'Drif Detail',
+                  headerTransparent: true,
+                  headerTintColor: '#fff', // optional, to make the back button and title white
+                  headerTitleStyle: {
+                    fontWeight: 'bold',
+                    color: '#fff',
+                  },
+                }}
+              />
+              <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+            </Stack>
+          </ThemeProvider>
+        </DeviceIdProvider>
+      </LocationProvider>
   );
 }

@@ -1,29 +1,34 @@
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
-import { StyleSheet, FlatList, ActivityIndicator } from 'react-native';
-
-import { Text, View } from '@/components/Themed';
+import {
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  ScrollView,
+  View as RNView,
+  ImageBackground,
+} from 'react-native';
+import { View, Text } from '@/components/Themed';
 import { db } from '@/firebaseConfig';
-
 import { useLocation } from '@/context/LocationContext';
-
+import WaveBG from '@/assets/images/drif-detail-wave-bg.png'; // Ensure the image exists in this path
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DrifDetailScreen() {
-    const { drifId, message, timestamp } = useLocalSearchParams<{
-        drifId: string;
-        message: string;
-        timestamp?: string;
-      }>();
-        const [replies, setReplies] = useState<any[]>([]);
+  const { drifId, message, timestamp } = useLocalSearchParams<{
+    drifId: string;
+    message: string;
+    timestamp?: string;
+  }>();
+
+  const [replies, setReplies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { locationName, loading: locationLoading } = useLocation();
   const [drifExpanded, setDrifExpanded] = useState(false);
-  const [showDrifSeeMore, setShowDrifSeeMore] = useState(false);
   const [expandedReplies, setExpandedReplies] = useState<{ [key: string]: boolean }>({});
 
-
-
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const fetchReplies = async () => {
@@ -46,140 +51,144 @@ export default function DrifDetailScreen() {
   }, [drifId]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>📩 Your Drif</Text>
-      <View style={styles.drifText}>
-        <Text numberOfLines={drifExpanded ? undefined : 4} ellipsizeMode="tail">
+    <ImageBackground source={WaveBG} style={styles.bg} resizeMode="cover">
+      <ScrollView
+        contentContainerStyle={[styles.scrollContainer, { paddingTop: insets.top + 120 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.container}>
+          <Text style={styles.title}>An Unexpected Connection</Text>
+
+          <Text style={styles.messageText} numberOfLines={drifExpanded ? undefined : 6}>
             {message}
-        </Text>
+          </Text>
 
-        <Text style={styles.seeMore} onPress={() => setDrifExpanded(!drifExpanded)}>
+          <Text style={styles.seeMore} onPress={() => setDrifExpanded(!drifExpanded)}>
             {drifExpanded ? 'See Less' : 'See More'}
-        </Text>
+          </Text>
 
-        {timestamp && (
+          <View style={styles.metaBlock}>
             <Text style={styles.meta}>
-            {new Date(timestamp).toLocaleString()}
+              💬 122   ❤️ 517   🔁
             </Text>
-        )}
-        <Text style={styles.meta}>
-            {locationLoading
-            ? 'Locating...'
-            : [locationName?.city, locationName?.region].filter(Boolean).join(', ') || 'Unknown'}
-        </Text>
-      </View>
+            <Text style={styles.meta}>
+              {locationLoading
+                ? 'Locating...'
+                : [locationName?.city, locationName?.region].filter(Boolean).join(', ') || 'Unknown'}
+            </Text>
+            {timestamp && (
+              <Text style={styles.meta}>{new Date(timestamp).toLocaleString()}</Text>
+            )}
+          </View>
 
+          <Text style={styles.repliesHeader}>💬 Replies</Text>
 
-
-      <Text style={styles.sectionTitle}>💬 Replies</Text>
-
-      {loading ? (
-        <ActivityIndicator size="large" />
-      ) : replies.length === 0 ? (
-        <Text style={styles.empty}>No replies yet</Text>
-      ) : (
-<FlatList
-  data={replies}
-  keyExtractor={(item) => item.id}
-  renderItem={({ item }) => {
-    const isExpanded = expandedReplies[item.id] || false;
-
-    return (
-      <View style={styles.replyItem}>
-        <Text numberOfLines={isExpanded ? undefined : 3} ellipsizeMode="tail">
-          {item.text ?? item.message ?? 'No content'}
-        </Text>
-
-        <Text
-          style={styles.seeMore}
-          onPress={() =>
-            setExpandedReplies((prev) => ({
-              ...prev,
-              [item.id]: !prev[item.id],
-            }))
-          }
-        >
-          {isExpanded ? 'See Less' : 'See More'}
-        </Text>
-
-        <Text style={styles.date}>
-          {item.timestamp?.toDate?.().toLocaleString?.() ??
-            item.sentAt?.toDate?.().toLocaleString?.() ??
-            item.repliedAt?.toDate?.().toLocaleString?.() ??
-            'unknown'}
-        </Text>
-        <Text style={styles.meta}>
-          {' '}
-          {locationLoading
-            ? 'Locating...'
-            : [locationName?.city, locationName?.region].filter(Boolean).join(', ') || 'Unknown'}
-        </Text>
-      </View>
-    );
-  }}
-/>
-
-      )}
-    </View>
+          {loading ? (
+            <ActivityIndicator size="large" />
+          ) : replies.length === 0 ? (
+            <Text style={styles.empty}>No replies yet</Text>
+          ) : (
+            replies.map(reply => {
+              const isExpanded = expandedReplies[reply.id] || false;
+              return (
+                <View key={reply.id} style={styles.replyCard}>
+                  <Text numberOfLines={isExpanded ? undefined : 3}>
+                    {reply.text ?? reply.message ?? 'No content'}
+                  </Text>
+                  <Text
+                    style={styles.seeMore}
+                    onPress={() =>
+                      setExpandedReplies(prev => ({
+                        ...prev,
+                        [reply.id]: !prev[reply.id],
+                      }))
+                    }
+                  >
+                    {isExpanded ? 'See Less' : 'See More'}
+                  </Text>
+                  <Text style={styles.meta}>
+                    {reply.timestamp?.toDate?.().toLocaleString?.() ??
+                      reply.sentAt?.toDate?.().toLocaleString?.() ??
+                      reply.repliedAt?.toDate?.().toLocaleString?.() ??
+                      'unknown'}
+                  </Text>
+                  <Text style={styles.meta}>
+                    {locationLoading
+                      ? 'Locating...'
+                      : [locationName?.city, locationName?.region].filter(Boolean).join(', ') ||
+                        'Unknown'}
+                  </Text>
+                </View>
+              );
+            })
+          )}
+        </View>
+      </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  bg: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  scrollContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 120,
+    flexGrow: 1,
+    backgroundColor: 'transparent'
+  },
   container: {
     flex: 1,
-    paddingTop: 60,
-    paddingHorizontal: 20,
+    backgroundColor:'transparent'
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  replyItem: {
-    backgroundColor: '#f9f9f9',
-    padding: 10,
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
     marginBottom: 12,
-    borderRadius: 8,
+    color: '#fff',
   },
-  date: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  empty: {
-    color: '#999',
-    fontStyle: 'italic',
-    marginTop: 10,
-  },
-  locationContainer: {
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  locationText: {
-    fontSize: 12,
-    color: '#888',
-    fontStyle: 'italic',
-  },
-  drifText: {
-    backgroundColor: '#f0f0f0',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  
-  meta: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 6,
+  messageText: {
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: 8,
+    color: '#fff',
   },
   seeMore: {
+    textAlign: 'center',
     color: '#007AFF',
-    marginTop: 6,
-    fontSize: 13,
-  },  
+    marginBottom: 8,
+  },
+  metaBlock: {
+    alignItems: 'center',
+    marginBottom: 24,
+    backgroundColor:'transparent'
+  },
+  meta: {
+    fontSize: 12,
+    color: '#eee',
+    marginTop: 2,
+  },
+  repliesHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#fff',
+  },
+  replyCard: {
+    backgroundColor: '#0a2940',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  empty: {
+    fontStyle: 'italic',
+    color: '#fff',
+    textAlign: 'center',
+    marginTop: 10,
+  },
 });

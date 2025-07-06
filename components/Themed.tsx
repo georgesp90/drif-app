@@ -23,11 +23,7 @@ export function useThemeColor(
   const theme = useColorScheme() ?? 'light';
   const colorFromProps = props[theme];
 
-  if (colorFromProps) {
-    return colorFromProps;
-  } else {
-    return Colors[theme][colorName];
-  }
+  return colorFromProps ?? Colors[theme][colorName];
 }
 
 export function Text(props: TextProps) {
@@ -36,10 +32,22 @@ export function Text(props: TextProps) {
 
   return <DefaultText style={[{ color }, style]} {...otherProps} />;
 }
-
 export function View(props: ViewProps) {
   const { style, lightColor, darkColor, ...otherProps } = props;
-  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
 
-  return <DefaultView style={[{ backgroundColor }, style]} {...otherProps} />;
+  // Check if user explicitly set backgroundColor
+  const userStyle = Array.isArray(style) ? Object.assign({}, ...style) : style || {};
+  const userDefinedBg = userStyle?.backgroundColor !== undefined;
+
+  // Only apply theme background if user did NOT define their own
+  const backgroundColor = userDefinedBg
+    ? undefined
+    : useThemeColor({ light: lightColor, dark: darkColor }, 'background');
+
+  return (
+    <DefaultView
+      style={[style, backgroundColor !== undefined && { backgroundColor }]}
+      {...otherProps}
+    />
+  );
 }
