@@ -11,8 +11,7 @@ import {
 } from 'react-native';
 import { View, Text } from '@/components/Themed';
 import { db } from '@/firebaseConfig';
-import { useLocation } from '@/context/LocationContext';
-//import WaveBG from '@/assets/images/drif-detail-wave-bg.png';
+import { getHumanReadableLocation } from '@/utils/getHumanReadableLocation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DrifDetailScreen() {
@@ -24,7 +23,8 @@ export default function DrifDetailScreen() {
 
   const [replies, setReplies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { locationName, loading: locationLoading } = useLocation();
+  const [drifLocation, setDrifLocation] = useState<string>('Locating...');
+  const [replyLocations, setReplyLocations] = useState<{ [key: string]: string }>({});
   const [drifExpanded, setDrifExpanded] = useState(false);
   const [expandedReplies, setExpandedReplies] = useState<{ [key: string]: boolean }>({});
 
@@ -39,7 +39,20 @@ export default function DrifDetailScreen() {
           id: doc.id,
           ...doc.data(),
         }));
+
+        const locationCache: { [key: string]: string } = {};
+
+        for (const reply of replyData) {
+          if (reply.location?.latitude && reply.location?.longitude) {
+            const readable = await getHumanReadableLocation(reply.location);
+            locationCache[reply.id] = [readable.city, readable.region].filter(Boolean).join(', ') || 'Unknown';
+          } else {
+            locationCache[reply.id] = 'Unknown';
+          }
+        }
+
         setReplies(replyData);
+        setReplyLocations(locationCache);
       } catch (err) {
         console.error('❌ Error loading replies:', err);
       } finally {
@@ -47,7 +60,29 @@ export default function DrifDetailScreen() {
       }
     };
 
+    const fetchDrifLocation = async () => {
+      try {
+        const drifRef = collection(db, 'drifs');
+        const drifDocs = await getDocs(drifRef);
+        const drifDoc = drifDocs.docs.find(doc => doc.id === drifId);
+
+        if (drifDoc) {
+          const loc = drifDoc.data().location;
+          if (loc?.latitude && loc?.longitude) {
+            const human = await getHumanReadableLocation(loc);
+            setDrifLocation([human.city, human.region].filter(Boolean).join(', ') || 'Unknown');
+          } else {
+            setDrifLocation('Unknown');
+          }
+        }
+      } catch (err) {
+        console.error('❌ Error fetching drif location:', err);
+        setDrifLocation('Unknown');
+      }
+    };
+
     fetchReplies();
+    fetchDrifLocation();
   }, [drifId]);
 
   return (
@@ -71,11 +106,7 @@ export default function DrifDetailScreen() {
             <Text style={styles.meta}>
               💬 122   ❤️ 517   🔁
             </Text>
-            <Text style={styles.meta}>
-              {locationLoading
-                ? 'Locating...'
-                : [locationName?.city, locationName?.region].filter(Boolean).join(', ') || 'Unknown'}
-            </Text>
+            <Text style={styles.meta}>{drifLocation}</Text>
             {timestamp && (
               <Text style={styles.meta}>{new Date(timestamp).toLocaleString()}</Text>
             )}
@@ -112,12 +143,7 @@ export default function DrifDetailScreen() {
                       reply.repliedAt?.toDate?.().toLocaleString?.() ??
                       'unknown'}
                   </Text>
-                  <Text style={styles.meta}>
-                    {locationLoading
-                      ? 'Locating...'
-                      : [locationName?.city, locationName?.region].filter(Boolean).join(', ') ||
-                        'Unknown'}
-                  </Text>
+                  <Text style={styles.meta}>{replyLocations[reply.id] ?? 'Locating...'}</Text>
                 </View>
               );
             })

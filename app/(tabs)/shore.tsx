@@ -21,20 +21,18 @@ import { Text, View } from '@/components/Themed';
 import { db } from '@/firebaseConfig';
 import { useDeviceId } from '@/context/DeviceIdContext';
 import { sendReply } from '@/utils/sendReply';
-import { useLocation } from '@/context/LocationContext';
-
+import { getHumanReadableLocation } from '@/utils/getHumanReadableLocation';
 
 export default function ShoreScreen() {
   const { deviceId, loading: deviceLoading } = useDeviceId();
   const [drifs, setDrifs] = useState<any[]>([]);
+  const [drifLocations, setDrifLocations] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [expandedMap, setExpandedMap] = useState<{ [key: string]: boolean }>({});
   const [showSeeMoreMap, setShowSeeMoreMap] = useState<{ [key: string]: boolean }>({});
-  const { locationName, loading: locationLoading } = useLocation();
-
 
   const fetchDrifs = async () => {
     if (!deviceId) return;
@@ -44,6 +42,27 @@ export default function ShoreScreen() {
       const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const shuffled = items.sort(() => 0.5 - Math.random());
       setDrifs(shuffled.slice(0, 2));
+
+      // fetch location names for each drif
+      const locs: { [key: string]: string } = {};
+      await Promise.all(
+        shuffled.map(async (item) => {
+          if (item.location?.latitude && item.location?.longitude) {
+            try {
+              const location = await getHumanReadableLocation({
+                latitude: item.location.latitude,
+                longitude: item.location.longitude,
+              });
+              locs[item.id] = [location.city, location.region].filter(Boolean).join(', ') || 'Unknown';
+            } catch {
+              locs[item.id] = 'Unknown';
+            }
+          } else {
+            locs[item.id] = 'Unknown';
+          }
+        })
+      );
+      setDrifLocations(locs);
     } catch (err) {
       console.error('❌ Failed to load Drifs:', err);
     } finally {
@@ -154,11 +173,8 @@ export default function ShoreScreen() {
                 {item.sentAt?.toDate?.().toLocaleString?.() ?? 'unknown'}
               </Text>
               <Text style={styles.meta}>
-                {locationLoading
-                ? 'Locating...'
-                : [locationName?.city, locationName?.region].filter(Boolean).join(', ') || 'Unknown'}
+                {drifLocations[item.id] || 'Locating...'}
               </Text>
-
 
               {replyingTo === item.id ? (
                 <>
@@ -221,5 +237,10 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     marginTop: 4,
     fontSize: 13,
+  },
+  meta: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
   },
 });

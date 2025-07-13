@@ -1,28 +1,42 @@
 import * as Location from 'expo-location';
 
-export const getHumanReadableLocation = async (coords: {
-    latitude: number;
-    longitude: number;
-  }): Promise<{
-    city?: string;
-    region?: string;
-    country?: string;
-  }> => {
-    try {
-      const [place] = await Location.reverseGeocodeAsync(coords);
-      console.log('📍 Raw reverse geocode result:', place);
+type Coords = {
+  latitude: number;
+  longitude: number;
+};
 
-  
-      return {
-        
-        city: place.district ?? place.city ?? undefined,
-        region: place.region ?? undefined,
-        country: place.country ?? undefined,
-  
-          
-      };
-    } catch (error) {
-      console.error('Reverse geocoding failed:', error);
-      return {};
-    }
-  };
+type HumanReadableLocation = {
+  city?: string;
+  region?: string;
+  country?: string;
+};
+
+const locationCache = new Map<string, HumanReadableLocation>();
+
+const coordsToKey = (coords: Coords): string =>
+  `${coords.latitude.toFixed(5)},${coords.longitude.toFixed(5)}`;
+
+export const getHumanReadableLocation = async (
+  coords: Coords
+): Promise<HumanReadableLocation> => {
+  const cacheKey = coordsToKey(coords);
+
+  if (locationCache.has(cacheKey)) {
+    return locationCache.get(cacheKey)!;
+  }
+
+  try {
+    const [place] = await Location.reverseGeocodeAsync(coords);
+    const result = {
+      city: place.district ?? place.city ?? undefined,
+      region: place.region ?? undefined,
+      country: place.country ?? undefined,
+    };
+
+    locationCache.set(cacheKey, result);
+    return result;
+  } catch (error) {
+    console.error('❌ Reverse geocoding failed:', error);
+    return {};
+  }
+};
