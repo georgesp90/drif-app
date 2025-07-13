@@ -50,7 +50,7 @@
       "url": "https://u.expo.dev/713caeab-88df-4978-82d4-28ee4084efdd"
     },
     "runtimeVersion": {
-      "policy": "sdkVersion"
+      "policy": "exposdk:53.0.0"
     }
   }
 }
