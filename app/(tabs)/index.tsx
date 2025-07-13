@@ -61,9 +61,9 @@ export default function TabOneScreen() {
         <Text>
           {locationLoading
             ? 'Locating...'
-            : [locationName?.city, locationName?.region].filter(Boolean).join(', ') || 'Unknown'}
+            : [locationName?.city, locationName?.region, locationName?.country].filter(Boolean).join(', ') || 'Unknown'}
         </Text>
-        
+
         <TextInput
           style={styles.input}
           placeholder="Write something anonymous..."

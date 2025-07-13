@@ -10,6 +10,8 @@ export const getHumanReadableLocation = async (coords: {
   }> => {
     try {
       const [place] = await Location.reverseGeocodeAsync(coords);
+      console.log('📍 Raw reverse geocode result:', place);
+
   
       return {
         
