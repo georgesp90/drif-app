@@ -13,9 +13,10 @@ export const getHumanReadableLocation = async (coords: {
   
       return {
         
-            city: 'Brooklyn',
-            region: 'New York',
-            country: 'United States'
+        city: place.district ?? place.city ?? undefined,
+        region: place.region ?? undefined,
+        country: place.country ?? undefined,
+  
           
       };
     } catch (error) {
