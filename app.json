@@ -22,10 +22,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "runtimeVersion": {
-        "policy": "appVersion"
-      }
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "bundler": "metro",
