@@ -22,7 +22,10 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -42,6 +45,12 @@
         "projectId": "713caeab-88df-4978-82d4-28ee4084efdd"
       }
     },
-    "owner": "georgesp9"
+    "owner": "georgesp9",
+    "updates": {
+      "url": "https://u.expo.dev/713caeab-88df-4978-82d4-28ee4084efdd"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    }
   }
 }
