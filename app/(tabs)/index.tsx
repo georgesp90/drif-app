@@ -1,10 +1,19 @@
-import { StyleSheet, ActivityIndicator, TextInput, Button, Alert, Keyboard, ImageBackground, Animated, Easing  } from 'react-native';
-import { useState, useRef, useEffect } from 'react';
+import {
+  StyleSheet,
+  ActivityIndicator,
+  TextInput,
+  Alert,
+  Keyboard,
+  ImageBackground,
+  TouchableOpacity,
+  Text,
+} from 'react-native';
+import { useState } from 'react';
 
 import { useDeviceId } from '@/context/DeviceIdContext';
 import { sendDrif } from '@/utils/sendDrif';
 
-import { Text, View } from '@/components/Themed';
+import { View } from '@/components/Themed';
 import { useLocation } from '@/context/LocationContext';
 
 export default function TabOneScreen() {
@@ -63,7 +72,10 @@ export default function TabOneScreen() {
           multiline
         />
 
-        <Button title="Send Drif" onPress={handleSend} />
+        {/* 🔵 Custom Pill Button */}
+        <TouchableOpacity style={styles.button} onPress={handleSend} activeOpacity={0.85}>
+          <Text style={styles.buttonText}>Send Drif</Text>
+        </TouchableOpacity>
       </View>
     </ImageBackground>
   );
@@ -72,13 +84,13 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    backgroundColor: 'skyblue', // fallback if image fails
+    backgroundColor: 'skyblue',
   },
   overlay: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 80,
-    backgroundColor: 'transparent', // translucent overlay for readability
+    backgroundColor: 'transparent',
   },
   center: {
     flex: 1,
@@ -95,19 +107,34 @@ const styles = StyleSheet.create({
     color: '#333',
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 12, // ✅ more rounded corners
+    borderRadius: 12,
     padding: 12,
     marginVertical: 20,
     minHeight: 80,
     textAlignVertical: 'top',
-  
-    // ✅ shadow for iOS
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-  
-    // ✅ elevation for Android
     elevation: 3,
+  },
+  button: {
+    backgroundColor: '#007AFF', // blue pill
+    borderRadius: 9999,
+    paddingVertical: 14,
+    paddingHorizontal: 36,
+    alignItems: 'center',
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 4,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

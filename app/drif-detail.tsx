@@ -12,7 +12,7 @@ import {
 import { View, Text } from '@/components/Themed';
 import { db } from '@/firebaseConfig';
 import { useLocation } from '@/context/LocationContext';
-import WaveBG from '@/assets/images/drif-detail-wave-bg.png'; // Ensure the image exists in this path
+//import WaveBG from '@/assets/images/drif-detail-wave-bg.png';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DrifDetailScreen() {
@@ -51,7 +51,7 @@ export default function DrifDetailScreen() {
   }, [drifId]);
 
   return (
-    <ImageBackground source={WaveBG} style={styles.bg} resizeMode="cover">
+    <ImageBackground source={require('@/assets/images/drif-detail-wave-bg.png')} style={styles.bg} resizeMode="cover">
       <ScrollView
         contentContainerStyle={[styles.scrollContainer, { paddingTop: insets.top + 120 }]}
         showsVerticalScrollIndicator={false}
