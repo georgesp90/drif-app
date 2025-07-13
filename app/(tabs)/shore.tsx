@@ -84,9 +84,13 @@ export default function ShoreScreen() {
 
   const handleReply = async (drifId: string) => {
     if (!replyText.trim()) return;
-
+  
+    if (!deviceId) {
+      console.warn('⚠️ No deviceId available. Reply will not be associated.');
+    }
+  
     try {
-      await sendReply(drifId, replyText.trim());
+      await sendReply(drifId, replyText.trim(), deviceId); // ✅ Now passing deviceId
       Alert.alert('✅ Reply Sent');
       setReplyingTo(null);
       setReplyText('');
@@ -95,6 +99,7 @@ export default function ShoreScreen() {
       Alert.alert('❌ Error', 'Failed to send reply.');
     }
   };
+  
 
   if (deviceLoading || loading) {
     return (
